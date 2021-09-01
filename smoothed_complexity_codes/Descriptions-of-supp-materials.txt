@@ -1,0 +1,9 @@
+The zip package contains the following
+
+1. the appendix in pdf
+
+2. the full paper in pdf (main text + appendix), for easy navigation (especially with hyperlinks and table of contents)
+
+3. a folder named "codes", which contains all codes used in the experiments. Some codes are imported from Preflib and Prefpy@Github, which are in public domains and may contain comments by the original authors. We have carefully tried to remove all information that would possibly reveal our identity. This includes anonymizing path names by "your choice". 
+
+4. a folder named "data", which contains the SOC files from Preflib used in some experiments. The datasets are in public domain as described in Section G in the appendix. We include them just for convenience.
