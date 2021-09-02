@@ -41,7 +41,8 @@ def read_preflib_soc(filename):
             pref_profile.append(np.array(row[1:])-1)
     
     return m, n, n_votes, n_unique, np.array(pref_profile), anon_pref_profile
-        
-# %% example
-fil = 'C:/RPI/CompSoc/Voting Axiom Verification/dataset/ED-00009-00000001.soc'
-m, n, n_votes, n_unique, votes, anon_votes = read_preflib_soc(fil)
+
+if __name__ == "__main__":
+    # %% example
+    fil = 'C:/RPI/CompSoc/Voting Axiom Verification/dataset/ED-00009-00000001.soc'
+    m, n, n_votes, n_unique, votes, anon_votes = read_preflib_soc(fil)
