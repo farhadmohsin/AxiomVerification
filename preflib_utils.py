@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import cvxpy as cp
 
-from voting_rules import Copeland_winner, maximin_winner
+from voting_utils import Copeland_winner, maximin_winner
 
 def read_preflib_soc(filename):
     '''
