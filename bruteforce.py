@@ -26,7 +26,7 @@ def naive_dfs(depth, k, votes, mask, b, a, r):
 	'''
 	global naive_dfs_witness_is_found
 	if k == 0:
-		c, tmp_score = Copeland_winner(votes[mask])
+		c, tmp_score = r(votes[mask])
 		if lexicographic_tiebreaking(c) == b:
 			naive_dfs_witness_is_found = True
 		return
