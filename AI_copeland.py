@@ -65,7 +65,7 @@ def AppMoVCopeland(d, m, n, n_votes, n_unique, votes, anon_votes, alpha = 0.5):
 			continue
 		relative_margin[c] = RM(wmgMap, n, m, d, c, alpha)
 	c_star = min(relative_margin.items(), key = lambda x: x[1])[0]
-	return relative_margin[c_star] * (math.ceil(np.log(m)) + 1)
+	return relative_margin[c_star]
 
 def RM(wmgMap, n, m, d, c, alpha = 0.5):
 	for t in range(n):
@@ -97,7 +97,7 @@ def AI_copeland(m, n, n_votes, n_unique, votes, anon_votes):
 
 	mov_k = AppMoVCopeland(a, m, n, n_votes, n_unique, votes, anon_votes)
 	print(mov_k, n)
-	for k in range(mov_k, n):
+	for k in range(max(1, mov_k), n):
 		for b in range(m):
 			if b == a:
 				continue
