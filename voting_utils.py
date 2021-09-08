@@ -40,9 +40,35 @@ def gen_pref_profile(N,m):
         votes.append(gen_random_vote(m))
     return np.array(votes)
 
+# m, n, n_votes, n_unique, anon_votes = anonymize_pref_profile(votes)
+
+def anonymize_pref_profile(votes):
+    
+    n, m = votes.shape
+    n_votes = n
+    
+    values, counts = np.unique(votes, axis = 0, return_counts=True)
+    anon_votes = []
+    for i in range(len(values)):
+        anon_votes.append([counts[i], values[i]])
+    
+    return m, n, n_votes, len(anon_votes), anon_votes
+
 #%% functions for calculating winners (multiwinner version)
 # TODO: Need to write a multi-round version (have function as parameters)
     
+def majority_graph(votes):
+    n,m = votes.shape
+    wmg = np.zeros((m,m))
+    for m1 in range(m):
+        for m2 in range(m1+1,m):
+            for v in votes:
+                if(v.tolist().index(m1) < v.tolist().index(m2)):
+                    wmg[m1][m2] += 1
+            wmg[m2][m1] = n - wmg[m1][m2]
+    
+    return wmg
+
 def Copeland_winner(votes):
     """
     Description:
