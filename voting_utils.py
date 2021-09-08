@@ -282,7 +282,7 @@ def singleton_v1_tiebreaking(votes, winners):
     if(flag):
         n,m = votes.shape
         perms = permutation(list(range(m)))
-        return singleton_winner(perms[r],winners)
+        return singleton_winner(np.array(perms[r]),winners)
     else:
         return(voter1_tiebreaking(votes, winners))
     
