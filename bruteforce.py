@@ -26,7 +26,7 @@ def naive_dfs(depth, k, votes, mask, b, a, r, tiebreaking):
     '''
     global naive_dfs_witness_is_found
     if k == 0:
-        c, tmp_score = Copeland_winner(votes[mask])
+        c, tmp_score = r(votes[mask])
         if tiebreaking(votes[mask],c) == b:
             naive_dfs_witness_is_found = True
         return
@@ -43,7 +43,7 @@ def naive_dfs(depth, k, votes, mask, b, a, r, tiebreaking):
 
 def brute_force(m, n, n_votes, n_unique, votes, anon_votes, r, tiebreaking, verbose=True):
     global naive_dfs_witness_is_found
-    a, score = Copeland_winner(votes)
+    a, score = r(votes)
     a = tiebreaking(votes, a)
     for k in range(1, n):
         for b in range(m):
@@ -72,7 +72,7 @@ def main():
             m, n, n_votes, n_unique, votes, anon_votes = read_preflib_soc("./dataset/" + file)
             assert n == n_votes
             print(file)
-            if brute_force(m, n, n_votes, n_unique, votes, anon_votes, Copeland_winner, 
+            if brute_force(m, n, n_votes, n_unique, votes, anon_votes, Copeland_winner,
                   lexicographic_tiebreaking) is True:
                 cnt += 1
     print(cnt, tot, cnt / tot)
