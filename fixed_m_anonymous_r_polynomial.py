@@ -111,7 +111,8 @@ def main(verbose = False):
     tot = 0
     for root, dirs, files in os.walk("./dataset/"):
         for file in files:
-            if "ED-00004" in file:
+            # if "ED-00004" in file or "ED-00011" in file:
+            if not "ED-00012" in file:
                 continue
             tot += 1
             m, n, n_votes, n_unique, votes, anon_votes = read_preflib_soc("./dataset/" + file)
@@ -119,8 +120,14 @@ def main(verbose = False):
             print(file)
 #             if algo(m, n, n_votes, n_unique, votes, anon_votes, Copeland_winner_anon, lexicographic_tiebreaking, verbose = verbose) is True:
 #                 cnt += 1
-            if algo(m, n, n_votes, n_unique, votes, anon_votes, Copeland_winner, lexicographic_tiebreaking, verbose = verbose) is True:
-                cnt += 1
+            try:
+                participation_sat = algo(m, n, n_votes, n_unique, votes, anon_votes, 
+                                         maximin_winner, lexicographic_tiebreaking, verbose = verbose)
+                if(participation_sat):
+                    cnt += 1
+            except Exception:
+                print(file, "could not be worked with")
+                pass
     print(cnt, tot, cnt / tot)
 
 if __name__ == "__main__":

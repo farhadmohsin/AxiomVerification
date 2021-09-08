@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import cvxpy as cp
+import os
 
 from voting_utils import Copeland_winner, maximin_winner
 
@@ -44,5 +45,11 @@ def read_preflib_soc(filename):
 
 if __name__ == "__main__":
     # %% example
-    fil = 'C:/RPI/CompSoc/Voting Axiom Verification/dataset/ED-00009-00000001.soc'
-    m, n, n_votes, n_unique, votes, anon_votes = read_preflib_soc(fil)
+    for root, dirs, files in os.walk("./dataset/"):
+        for file in files:
+            if "ED-00004" in file:
+                continue
+            
+            m, n, n_votes, n_unique, votes, anon_votes = read_preflib_soc("./dataset/" + file)
+            print(file, m, n)
+            

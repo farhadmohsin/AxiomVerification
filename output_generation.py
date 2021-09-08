@@ -4,6 +4,7 @@ import os
 from matplotlib import pyplot as plt
 import seaborn as sns
 
+#%%
 df = pd.DataFrame()
 
 for filname in os.listdir('synthetic_data'):
@@ -25,3 +26,5 @@ sns.catplot(x="setting", y="runtime", data=df, ax = ax)
 
 sns.plot.show()
 # g.fig.suptitle('runtime for brute force search \nCopeland-lexicographic MPSR tiebreaking')
+
+#%%

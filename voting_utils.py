@@ -257,7 +257,16 @@ def voter1_tiebreaking(votes, winners):
     return singleton_winner(votes[0],winners)
 
 def singleton_lex_tiebreaking(votes, winners):
-    rank_cnt = ranking_count(votes)
+    
+    # changing this for when m is large
+    
+    # old 
+    # rank_cnt = ranking_count(votes)
+    # rank_srt = np.flip(np.argsort(rank_cnt))
+    
+    # new
+    m, n, n_votes, n_unique, anon_votes = anonymize_pref_profile(votes)
+    rank_cnt = [av[0] for av in anon_votes]
     rank_srt = np.flip(np.argsort(rank_cnt))
     
     flag = False
@@ -269,14 +278,25 @@ def singleton_lex_tiebreaking(votes, winners):
             break
     
     if(flag):
-        n,m = votes.shape
-        perms = permutation(list(range(m)))
-        return singleton_winner(np.array(perms[r]),winners)
+        # old
+        # perms = permutation(list(range(m)))
+        # return singleton_winner(np.array(perms[r]),winners)
+        # new
+        ranking = anon_votes[r][1]
+        return singleton_winner(ranking, winners)
     else:
         return(lexicographic_tiebreaking(votes, winners))
         
 def singleton_v1_tiebreaking(votes, winners):
-    rank_cnt = ranking_count(votes)
+    # changing this for when m is large
+    
+    # old 
+    # rank_cnt = ranking_count(votes)
+    # rank_srt = np.flip(np.argsort(rank_cnt))
+    
+    # new
+    m, n, n_votes, n_unique, anon_votes = anonymize_pref_profile(votes)
+    rank_cnt = [av[0] for av in anon_votes]
     rank_srt = np.flip(np.argsort(rank_cnt))
     
     flag = False
@@ -288,9 +308,12 @@ def singleton_v1_tiebreaking(votes, winners):
             break
     
     if(flag):
-        n,m = votes.shape
-        perms = permutation(list(range(m)))
-        return singleton_winner(np.array(perms[r]),winners)
+        # old
+        # perms = permutation(list(range(m)))
+        # return singleton_winner(np.array(perms[r]),winners)
+        # new
+        ranking = anon_votes[r][1]
+        return singleton_winner(ranking, winners)
     else:
         return(voter1_tiebreaking(votes, winners))
     

@@ -112,7 +112,7 @@ def check_new_pref(anon_votes, votes, b, vbw, x, voting_rule, tiebreaking):
     new_votes = create_full_pref(create_new_pref(anon_votes, vbw, list(x)))
                     
     new_w_, new_s = voting_rule(new_votes)
-    new_w = tiebreaking(votes, new_w_)
+    new_w = tiebreaking(new_votes, new_w_)
 
     # print(f'\t new_w = {new_w}, new_s = {new_s}')
     
@@ -171,7 +171,8 @@ def ILP_search(votes, anon_votes, n, m, voting_rule, tiebreaking, debug = False)
         vwb = Rab(w, b, rankings)   # ranking indices with w \succ b
         
         len_x = len(vbw) # no. of variables
-        
+        if(len(vbw) == 0):
+            continue
         for i in range((m+1)//2, m):
             # if(found_flag):
             #     break
@@ -193,7 +194,6 @@ def ILP_search(votes, anon_votes, n, m, voting_rule, tiebreaking, debug = False)
                 #     if(len(C) == (m+1)//2):
                 #         print(A.T)
                 #         print(h)
-                
                 sol = cvxopt.solvers.lp(c, A.T, h)
                 # print(sum(c.T * sol['x']))
                 if(sol['status'] != 'optimal'):
