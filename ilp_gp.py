@@ -108,15 +108,7 @@ def create_new_pref(anon_votes, vbw, absent_x):
         copy_votes[vbw[i]][0] = int(absent_x[i])
     return copy_votes
 
-def create_full_pref(anon_votes):
-    votes = []
-    for av in anon_votes:
-        for j in range(av[0]):
-            votes.append(av[1])
-    
-    return np.array(votes)
-
-def check_new_pref(anon_votes, b, vbw, x, voting_rule, tiebreaking):
+def check_new_pref(anon_votes, votes, b, vbw, x, voting_rule, tiebreaking):
     new_votes = create_full_pref(create_new_pref(anon_votes, vbw, list(x)))
                     
     new_w_, new_s = voting_rule(new_votes)
@@ -249,9 +241,9 @@ def ILP_search(votes, anon_votes, n, m, voting_rule, tiebreaking, debug = False)
                 
                 A, h, upper_bounds = create_CP_SAT(anon_votes, b, vbw, vwb, C, rankings)
                 if(debug):
-                        print(f'A = {A}')
-                        print(f'h = {h}')
-                        print(f'ub = {upper_bounds}')
+                    print(f'A = {A}')
+                    print(f'h = {h}')
+                    print(f'ub = {upper_bounds}')
 
                 
                 num_vals = len(vbw)
@@ -278,7 +270,7 @@ def ILP_search(votes, anon_votes, n, m, voting_rule, tiebreaking, debug = False)
                     print('Number of solutions found: %i' % len(solution_collector.solution_list))
                 
                 for x in solution_collector.solution_list:
-                    flag, new_votes = check_new_pref(anon_votes, b, vbw, x, voting_rule, tiebreaking)
+                    flag, new_votes = check_new_pref(anon_votes, votes, b, vbw, x, voting_rule, tiebreaking)
                     if(flag):
                         found_flag = True
                         print(f"GP not satsified, b = {b}")

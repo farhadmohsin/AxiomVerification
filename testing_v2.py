@@ -6,7 +6,7 @@ from time import time
 
 if __name__ == '__main__':
         
-    n = 30
+    n = 20
     m = 4
     
     voting_rule = Copeland_winner
@@ -45,7 +45,7 @@ if __name__ == '__main__':
         ILP_times.append(tok-tik)    
         
         tik = time()
-        if(algo(m, n, n_votes, n_unique, votes, anon_votes, Copeland_winner_anon, tiebreaking, verbose = True)):
+        if(algo(m, n, n_votes, n_unique, votes, anon_votes, Copeland_winner, tiebreaking, verbose = True)):
             anon_brute_cnt += 1
         tok = time()
         anon_brute_times.append(tok-tik)    

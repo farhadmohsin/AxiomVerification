@@ -54,6 +54,14 @@ def anonymize_pref_profile(votes):
     
     return m, n, n_votes, len(anon_votes), anon_votes
 
+def create_full_pref(anon_votes):
+    votes = []
+    for av in anon_votes:
+        for j in range(av[0]):
+            votes.append(av[1])
+    
+    return np.array(votes)
+
 #%% functions for calculating winners (multiwinner version)
 # TODO: Need to write a multi-round version (have function as parameters)
     
