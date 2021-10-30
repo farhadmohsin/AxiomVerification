@@ -1,13 +1,15 @@
 from preflib_utils import read_preflib_soc
-from voting_utils import Copeland_winner, maximin_winner
+from voting_utils import Copeland_winner, maximin_winner, lexicographic_tiebreaking
 import numpy as np
 import os
 import itertools
 import math
 import copy
+from itertools import combinations
+from ilp_gp import *
 
-def lexicographic_tiebreaking(winners):
-	return winners[0]
+# def lexicographic_tiebreaking(winners):
+# 	return winners[0]
 
 def Copeland_winner_anon(anon_votes, removed_cnt = None):
 	"""
@@ -24,8 +26,8 @@ def Copeland_winner_anon(anon_votes, removed_cnt = None):
 	m = anon_votes[0][1].shape[0]
 	scores = np.zeros(m)
 	for m1 in range(m):
-		for m2 in range(m1+1,m):
-			m1prefm2 = 0		#m1prefm2 would hold #voters with m1 \pref m2
+		for m2 in range(m1 + 1, m):
+			m1prefm2 = 0  # m1prefm2 would hold #voters with m1 \pref m2
 			m2prefm1 = 0
 			for i, anon_vote in enumerate(anon_votes):
 				cnt1, v = anon_vote
@@ -47,6 +49,59 @@ def Copeland_winner_anon(anon_votes, removed_cnt = None):
 	winner = np.argwhere(scores == np.max(scores)).flatten().tolist()
 	return winner, scores
 
+def LP_search(anon_votes, removed_cnt, b, a, tiebreaking, debug = False):
+	tmp_anon_votes = copy.deepcopy(anon_votes)
+	for i in range(len(tmp_anon_votes)):
+		# cnt, v = tmp_anon_votes[i]
+		tmp_anon_votes[i][0] -= removed_cnt[i]
+
+	n = len(tmp_anon_votes)
+	m = tmp_anon_votes[0][1].shape[0]
+	# initializtion
+	w_, s = Copeland_winner_anon(tmp_anon_votes, removed_cnt)
+	w = tiebreaking(None, w_)
+
+	rankings = [av[1] for av in tmp_anon_votes]
+
+	# pre-compute combinations
+	alts = np.arange(m - 1)
+	all_combinations = []
+	for i in range((m + 1) // 2, m):
+		all_combinations.append(combs(alts, i))
+
+	vbw = Rab(b, w, rankings)  # ranking indices with b \succ w
+	vwb = Rab(w, b, rankings)  # ranking indices with w \succ b
+
+	# found_flag = False
+	if len(vbw) == 0:
+		return False
+	for i in range((m + 1) // 2, m):
+		# if(found_flag):
+		#     break
+		# for different no. head-to-head wins
+		i_combs = all_combinations[i - (m + 1) // 2]
+
+		for temp in i_combs:
+			# for different combinations of wins
+			C = temp.copy()
+			C[C == b] = m - 1  # replace
+			if debug:
+				print(f"b = {b}, C = {C}")
+
+			# create the LP
+			# compute A and h (obj. fun. would be 0 since we just want feasibility) Ax <= h
+			# len(x) = len(vbw), because these are the only rankings manipulatable
+			A, h, c = create_LP(tmp_anon_votes, b, vbw, vwb, C, rankings)
+			sol = cvxopt.solvers.lp(c, A.T, h)
+			# print(sum(c.T * sol['x']))
+			if sol['status'] != 'optimal':
+				if debug:
+					print('LP not feasible:', sol['status'])
+				continue
+			else:
+				return True
+	return False
+
 AI_copeland_witness_is_found = False
 
 def naive_dfs(depth, k, anon_votes, removed_cnt, b, a, tiebreaking):
@@ -67,15 +122,19 @@ def naive_dfs(depth, k, anon_votes, removed_cnt, b, a, tiebreaking):
 	global AI_copeland_witness_is_found
 	if k == 0:
 		c, tmp_score = Copeland_winner_anon(anon_votes, removed_cnt)
-		if tiebreaking(c) == b:
+		if tiebreaking(None, c) == b:
 			AI_copeland_witness_is_found = True
 		return
 	if depth == len(anon_votes):
 		return
 
+	# Pruning
+	if k <= 2 and not LP_search(anon_votes, removed_cnt, b, a, tiebreaking):
+		return
+
 	cnt1, vote = anon_votes[depth]
 	if vote.tolist().index(b) < vote.tolist().index(a):
-		for cnt2 in range(1, min(cnt1 + 1, k + 1)):
+		for cnt2 in range(1, min(cnt1, k) + 1):
 			removed_cnt[depth] = cnt2
 			naive_dfs(depth + 1, k - cnt2, anon_votes, removed_cnt, b, a, tiebreaking)
 			if AI_copeland_witness_is_found is True:
@@ -155,7 +214,8 @@ def AI_copeland(m, n, n_votes, n_unique, votes, anon_votes, tiebreaking):
 			else:
 				scores[m2] += 1
 	winner = np.argwhere(scores == np.max(scores)).flatten().tolist()
-	a = tiebreaking(winner)
+	assert tiebreaking == lexicographic_tiebreaking
+	a = tiebreaking(None, winner)
 
 	target_winners_scores = list(zip([_ for _ in range(m)], scores))
 	target_winners_scores = sorted(target_winners_scores, key = lambda x: x[1], reverse = True)
@@ -170,7 +230,7 @@ def AI_copeland(m, n, n_votes, n_unique, votes, anon_votes, tiebreaking):
 		for b, _ in target_winners_scores:
 			if b == a:
 				continue
-			removed_cnt = np.zeros(len(sorted_anon_votes), dtype = np.int)
+			removed_cnt = np.zeros(len(sorted_anon_votes), dtype = int)
 			AI_copeland_witness_is_found = False
 			naive_dfs(0, k, sorted_anon_votes, removed_cnt, b, a, tiebreaking)
 

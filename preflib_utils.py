@@ -20,7 +20,7 @@ def read_preflib_soc(filename):
     n_votes : no_votes (might be different from n, but is usually the same)
     n_unique : number of uniqu ranking that's present, maximum m!
     pref_profile: list of n rankings
-    anon_pref_profile : list of n_unique (ranking, count) pair
+    anon_pref_profile : list of n_unique (count, ranking) pair
     '''
     
     with open(filename) as f:
