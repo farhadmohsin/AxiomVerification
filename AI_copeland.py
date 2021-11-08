@@ -7,6 +7,7 @@ import math
 import copy
 from itertools import combinations
 from ilp_gp import *
+import time
 
 # def lexicographic_tiebreaking(winners):
 # 	return winners[0]
@@ -49,7 +50,15 @@ def Copeland_winner_anon(anon_votes, removed_cnt = None):
 	winner = np.argwhere(scores == np.max(scores)).flatten().tolist()
 	return winner, scores
 
+LP_times = []
+LP_total = 0
+LP_cnt = 0
+
 def LP_search(anon_votes, removed_cnt, b, a, tiebreaking, debug = False):
+	global LP_times, LP_total, LP_cnt
+	LP_total += 1
+	tic = time.time()
+
 	tmp_anon_votes = copy.deepcopy(anon_votes)
 	for i in range(len(tmp_anon_votes)):
 		# cnt, v = tmp_anon_votes[i]
@@ -74,6 +83,8 @@ def LP_search(anon_votes, removed_cnt, b, a, tiebreaking, debug = False):
 
 	# found_flag = False
 	if len(vbw) == 0:
+		toc = time.time()
+		LP_times.append(toc - tic)
 		return False
 	for i in range((m + 1) // 2, m):
 		# if(found_flag):
@@ -99,7 +110,12 @@ def LP_search(anon_votes, removed_cnt, b, a, tiebreaking, debug = False):
 					print('LP not feasible:', sol['status'])
 				continue
 			else:
+				toc = time.time()
+				LP_times.append(toc - tic)
 				return True
+	toc = time.time()
+	LP_times.append(toc - tic)
+	LP_cnt += 1
 	return False
 
 AI_copeland_witness_is_found = False
@@ -129,7 +145,7 @@ def naive_dfs(depth, k, anon_votes, removed_cnt, b, a, tiebreaking):
 		return
 
 	# Pruning
-	if k <= 2 and not LP_search(anon_votes, removed_cnt, b, a, tiebreaking):
+	if not LP_search(anon_votes, removed_cnt, b, a, tiebreaking):
 		return
 
 	cnt1, vote = anon_votes[depth]
@@ -254,8 +270,14 @@ def main():
 			m, n, n_votes, n_unique, votes, anon_votes = read_preflib_soc("./dataset/" + file)
 			assert n == n_votes
 			print(file)
+			global LP_times, LP_total, LP_cnt
+			LP_times = []
+			LP_total = 0
+			LP_cnt = 0
 			if AI_copeland(m, n, n_votes, n_unique, votes, anon_votes, lexicographic_tiebreaking) is True:
 				cnt += 1
+			print("LP runs {} times, average time is {}.".format(len(LP_times), np.average(LP_times)))
+			print("LP total: {}, cnt: {}".format(LP_total, LP_cnt))
 	print(cnt, tot, cnt / tot)
 
 if __name__ == "__main__":
