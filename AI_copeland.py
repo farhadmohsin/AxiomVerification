@@ -103,6 +103,7 @@ def LP_search(anon_votes, removed_cnt, b, a, tiebreaking, debug = False):
 			# compute A and h (obj. fun. would be 0 since we just want feasibility) Ax <= h
 			# len(x) = len(vbw), because these are the only rankings manipulatable
 			A, h, c = create_LP(tmp_anon_votes, b, vbw, vwb, C, rankings)
+
 			sol = cvxopt.solvers.lp(c, A.T, h)
 			# print(sum(c.T * sol['x']))
 			if sol['status'] != 'optimal':
@@ -113,12 +114,71 @@ def LP_search(anon_votes, removed_cnt, b, a, tiebreaking, debug = False):
 				toc = time.time()
 				LP_times.append(toc - tic)
 				return True
+
+			# status, x = cvxopt.glpk.ilp(c, A.T, h, I=set(range(len(c))))
+			# 	# print(sum(c.T*x))
+			# if status != 'optimal' :
+			# 	if debug :
+			# 		print('ILP not feasible', 'status')
+			# 	continue
+			# else:
+			# 	if debug:
+			# 		print('ILP feasible')
+			# 	toc = time.time()
+			# 	LP_times.append(toc - tic)
+			# 	return True
+
 	toc = time.time()
 	LP_times.append(toc - tic)
 	LP_cnt += 1
 	return False
 
+def leastVotesToRemove(anon_votes, removed_cnt, b, a, tiebreaking):
+	n = len(anon_votes)
+	m = anon_votes[0][1].shape[0]
+
+	# a, tmp_score = Copeland_winner_anon(anon_votes, removed_cnt)
+	# a = a[0]
+
+	# weights of a in wmg: P[a > c] - P[c > a]
+	w_a = np.zeros(m, dtype = np.int32)
+	# weights of b im wmg: P[b > c] - P[c > b]
+	w_b = np.zeros(m, dtype = np.int32)
+	for i, anon_vote in enumerate(anon_votes):
+		cnt1, v = anon_vote
+		if removed_cnt is None:
+			cnt2 = 0
+		else:
+			cnt2 = removed_cnt[i]
+		for c in range(m):
+			if a != c:
+				if v.tolist().index(a) < v.tolist().index(c):
+					w_a[c] += cnt1 - cnt2
+				else:
+					w_a[c] -= cnt1 - cnt2
+			if b != c:
+				if v.tolist().index(b) < v.tolist().index(c):
+					w_b[c] += cnt1 - cnt2
+				else:
+					w_b[c] -= cnt1 - cnt2
+
+	min_out_a = -1
+	min_in_b = -1
+	for c in range(m):
+		if a != c:
+			if w_a[c] >= 0 and (min_out_a == -1 or w_a[c] < min_out_a):
+				min_out_a = w_a[c]
+		if b != c:
+			if w_b[c] <= 0 and (min_in_b == -1 or -w_b[c] < -min_in_b):
+				min_in_b = -w_b[c]
+
+	# print(w_a, min_out_a, w_b, min_in_b)
+	return min(min_out_a, min_in_b)
+
 AI_copeland_witness_is_found = False
+
+LV_total = 0
+LV_cnt = 0
 
 def naive_dfs(depth, k, anon_votes, removed_cnt, b, a, tiebreaking):
 	'''
@@ -135,7 +195,7 @@ def naive_dfs(depth, k, anon_votes, removed_cnt, b, a, tiebreaking):
 	Output:
 		None, but I use global variable (AI_copeland_witness_is_found) here
 	'''
-	global AI_copeland_witness_is_found
+	global AI_copeland_witness_is_found, LV_total, LV_cnt
 	if k == 0:
 		c, tmp_score = Copeland_winner_anon(anon_votes, removed_cnt)
 		if tiebreaking(None, c) == b:
@@ -145,7 +205,12 @@ def naive_dfs(depth, k, anon_votes, removed_cnt, b, a, tiebreaking):
 		return
 
 	# Pruning
-	if not LP_search(anon_votes, removed_cnt, b, a, tiebreaking):
+	# if not LP_search(anon_votes, removed_cnt, b, a, tiebreaking):
+	# 	return
+	LV = leastVotesToRemove(anon_votes, removed_cnt, b, a, tiebreaking)
+	LV_total += 1
+	if LV > k:
+		LV_cnt += 1
 		return
 
 	cnt1, vote = anon_votes[depth]
@@ -270,14 +335,17 @@ def main():
 			m, n, n_votes, n_unique, votes, anon_votes = read_preflib_soc("./dataset/" + file)
 			assert n == n_votes
 			print(file)
-			global LP_times, LP_total, LP_cnt
+			global LP_times, LP_total, LP_cnt, LV_total, LV_cnt
 			LP_times = []
 			LP_total = 0
 			LP_cnt = 0
+			LV_total = 0
+			LV_cnt = 0
 			if AI_copeland(m, n, n_votes, n_unique, votes, anon_votes, lexicographic_tiebreaking) is True:
 				cnt += 1
-			print("LP runs {} times, average time is {}.".format(len(LP_times), np.average(LP_times)))
-			print("LP total: {}, cnt: {}".format(LP_total, LP_cnt))
+			# print("LP runs {} times, average time is {}.".format(len(LP_times), np.average(LP_times)))
+			# print("LP total: {}, cnt: {}".format(LP_total, LP_cnt))
+			print("LV total: {}, cnt: {}".format(LV_total, LV_cnt))
 	print(cnt, tot, cnt / tot)
 
 if __name__ == "__main__":
