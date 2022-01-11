@@ -1,5 +1,6 @@
 import numpy as np
 from time import time
+from itertools import permutations, product
 #%% functions for generating preference profiles
 def permutation(lst):
     """
@@ -7,29 +8,42 @@ def permutation(lst):
         supporting function for ranking_count
     reference: https://www.geeksforgeeks.org/generate-all-the-permutation-of-a-list-in-python/
     """
-    if(len(lst) == 0):
-        return []
-    if(len(lst) == 1):
-        return [lst]
-    l = []   
-    for i in range(len(lst)): 
-       m = lst[i] 
-       remLst = lst[:i] + lst[i+1:] 
-       for p in permutation(remLst): 
-           l.append([m] + p) 
-    return l
-
+    # if(len(lst) == 0):
+    #     return []
+    # if(len(lst) == 1):
+    #     return [lst]
+    # l = []   
+    # for i in range(len(lst)): 
+    #    m = lst[i] 
+    #    remLst = lst[:i] + lst[i+1:] 
+    #    for p in permutation(remLst): 
+    #        l.append([m] + p) 
+    # return l
+    # updating to use itertools.permutations
+    perms = [list(P) for P in list(permutations(lst))]
+    return perms
+    
 def gen_random_vote(m):
     # m is the number of alternatives
     # this functions generates an uniformly random profile
     # i.e 1/m! probability of each profile
     
-    alts = list(range(m))
-    perms = permutation(alts)
+    # alts = list(range(m))
+    # perms = permutation(alts)
     
-    t = np.random.randint(0,len(perms))
+    # t = np.random.randint(0,len(perms))
     
-    return perms[t]
+    # return perms[t]
+    
+    random_perm = list(range(m))
+    for i in range(m-1):
+        j = np.random.randint(low = i, high = m)
+        temp = random_perm[i]
+        random_perm[i] = random_perm[j]
+        random_perm[j] = temp
+    
+    return random_perm
+    
 
 def gen_pref_profile(N,m):
     """
@@ -107,6 +121,28 @@ def Copeland_winner(votes):
     
     return winner, scores
 
+def Blacks_winner(votes):
+    """
+    Parameters
+    ----------
+    votes : preference profile (n*m numpy array).
+
+    Returns
+    -------
+    Condorcet winner if exists.
+    Else, Borda winner
+    
+    scores will have Copeland winner if Condorcet w exists
+    Else, Borda scores
+    """
+    n, m = votes. shape
+    winner, scores = Copeland_winner(votes)
+    
+    if(scores[winner[0]] == m-1):
+        return winner, scores
+    
+    return Borda_winner(votes)
+    
 def condorcet_exist(votes):
     """
     Parameters
@@ -154,14 +190,21 @@ def STV_helper(votes, n, m, removed):
     n : #votes
     m : #candidates in original election
     removed : already removed candidates
+    
+    #tie-breaking: this STV-helper automatically includes lexicographic tiebreaking
     """
     winner, scores = plurality_winner(votes)
-    
-    if(np.max(scores) >= n/2):
+    # if(np.max(scores) >= n/2):
+    #     return winner, scores
+    if(len(removed) == m - 1):
         return winner, scores
     rest_scores = scores
     rest_scores[removed] = np.inf
-    c_last = np.argmin(rest_scores)
+    
+    losers = np.where(rest_scores == np.min(rest_scores))
+    # taking max here ensures lexicographic tie-breaking, any tie-breaking 
+    # that we wish to implement would need to change only this
+    c_last = np.max(losers)
     
     removed.append(c_last)
     new_votes = []
@@ -380,21 +423,105 @@ def Consistency_efficiency(voting_rule, N=250, m=6, profiles=1000):
     return 0
 
 #%%
+def create_umg_helper(m, current, idx = 0, result = []):
+    current_copy = current.copy()
+    for w in [-1, 0, 1]:
+        new_copy = current_copy + [w]
+        if(idx + 1 == (m*(m-1))/2):
+            result.append(new_copy)
+        else:
+            create_umg_helper(m, new_copy, idx + 1, result)
+    return result
+
+def create_umgs(m):
+    """[summary]
+
+    Args:
+        m ([INT]): [no. of candidates]
+
+    Returns:
+        edges : [list of all edges between candidates, length would be m(m-1)/2]
+        result: [contains all 2**(m(m-1)/2) UMG's. For an edge i,j
+                    -1 -> i>j
+                     0 -> i=j
+                    +1 -> i<j]
+    """
+    edges = []
+    for i in range(m-1):
+        edges += [[i,j] for j in range(i+1, m)]
+    result = create_umg_helper(m = m, current = [], result = [])
+    return edges, result
+
+def Copeland_winner_from_umg(UMG, m, edges, alpha = 0.5):
+    score = np.zeros(m)
+    for i, e in enumerate(edges):
+        if UMG[i] == -1:
+            score[e[0]] += 1
+        elif UMG[i] == 0:
+            score[e[0]] += alpha
+            score[e[1]] += alpha
+        else:
+            score[e[1]] += 1
+    return np.argmax(score), score
+
+
+def product_alt_pairs(m):
+    '''
+    for mm
+        we select a pair of alternatives (a,b)
+        a is the winner #a \succ a' is the maximin score
+        so #a \succ a' <= #a \succ c for all c
+        
+        for all b \neq a
+        we need the maximin score for b
+        assume #b \succ b' is the maximin socre for b
+        then #b \succ b' <= b \succ c for all c
+        
+        finally #a \succ a' >= (or >) b \succ b' for all b
+    '''
+    
+    alt_adjacent_list = [] # list of other oponent for each oponent, m*(m-1) matrix
+    for a in range(m):
+        alt_adjacent_list.append([i for i in range(m) if i != a])
+    
+    # the i'th element in product_all_pairs[k] is i's maximin score in combination k
+    product_maximin_alt = [list(prod) for prod in product(*alt_adjacent_list)]
+    return product_maximin_alt
+
+#%%
 
 def main():
-    print("Consistency efficiency results for m = 6")
+    # print("Consistency efficiency results for m = 6")
     # print("Copeland")
     # Consistency_efficiency(Copeland_winner)
     # print("STV")
     # Consistency_efficiency(STV_winner, profiles = 100)
-    print("maximin")
-    Consistency_efficiency(maximin_winner, profiles = 100, N=1000)
+    # print("maximin")
+    # Consistency_efficiency(maximin_winner, profiles = 100, N=1000)
 
     # print("Condorcet efficiency results for m = 8")
     # print("STV")
     # Condorcet_efficiency(STV_winner)
     # print("Borda")
     # Condorcet_efficiency(Borda_winner)
+    return 0
     
 if __name__ == "__main__":
-    main()
+    # main()
+    N = 10
+    m = 4
+    
+    votes = gen_pref_profile(N, m)
+    w, s = STV_winner(votes)
+    
+    print(w, s)
+    
+    # w_cnt = np.zeros(m)
+    
+    # edges, all_umgs = create_umgs(m)
+    # for umg in all_umgs:
+    #     w, s = Copeland_winner_from_umg(umg, m, edges)
+    #     # print(umg, s, np.min(w))
+    #     w_cnt[np.min(w)] += 1
+        
+    # print(w_cnt)

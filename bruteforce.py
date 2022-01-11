@@ -37,6 +37,7 @@ def naive_dfs(depth, k, votes, mask, b, a, r, tiebreaking):
         mask[depth] = False
         naive_dfs(depth + 1, k - 1, votes, mask, b, a, r, tiebreaking)
         if naive_dfs_witness_is_found is True:
+            # print(mask)
             return
         mask[depth] = True
     naive_dfs(depth + 1, k, votes, mask, b, a, r, tiebreaking)

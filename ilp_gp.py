@@ -104,7 +104,7 @@ def create_CP_SAT(anon_votes, b, vbw, vwb, C, rankings):
 
 def create_new_pref(anon_votes, vbw, absent_x):
     copy_votes = copy.deepcopy(anon_votes)
-    for i,ranking in enumerate(vbw):
+    for i, ranking in enumerate(vbw):
         copy_votes[vbw[i]][0] = int(absent_x[i])
     return copy_votes
 
